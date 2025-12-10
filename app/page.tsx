@@ -74,7 +74,7 @@ export default function Home() {
   // ---------------------------
   // ACTUALIZAR INFO PARTIDA
   // ---------------------------
-  async function actualizarInfo(codeOverride) {
+  async function actualizarInfo(codeOverride?:string) {
     const code = codeOverride || gameCode;
     if (!code) return;
 
