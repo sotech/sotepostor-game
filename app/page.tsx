@@ -3,13 +3,16 @@
 import { useState } from "react";
 
 export default function Home() {
+  const [mode, setMode] = useState<null|string>(null);
   const [players, setPlayers] = useState(8);
-  const [impostors, setImpostors] = useState(2);
+  const [impostors, setImpostors] = useState(1);
   const [word, setWord] = useState("");
   const [gameCode, setGameCode] = useState(null);
-  const [joinedName, setJoinedName] = useState("");
-  const [joinedCode, setJoinedCode] = useState("");
+
+  const [name, setName] = useState("");
+  const [joinCode, setJoinCode] = useState("");
   const [role, setRole] = useState(null);
+  const [status, setStatus] = useState(null);
 
   async function crearPartida() {
     const res = await fetch("/api/create-game", {
@@ -22,84 +25,148 @@ export default function Home() {
     setGameCode(data.code);
   }
 
+  async function iniciar() {
+    await fetch("/api/start-game", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: gameCode }),
+    });
+  }
+
+  async function siguienteRonda() {
+    await fetch("/api/next-round", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: gameCode }),
+    });
+
+    alert("Nueva ronda iniciada");
+  }
+
+  async function finalizar() {
+    await fetch("/api/end-game", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: gameCode }),
+    });
+
+    setMode(null);
+    setGameCode(null);
+  }
+
   async function unirse() {
     const res = await fetch("/api/join", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        code: joinedCode,
-        name: joinedName,
-      }),
+      body: JSON.stringify({ code: joinCode, name }),
     });
 
     const data = await res.json();
-    if (data.role) {
-      setRole(data.role);
-    } else {
-      alert(data.error);
-    }
+
+    if (data.error) return alert(data.error);
+
+    setRole(data.role);
+    setStatus(data.status || "ESPERA");
+  }
+
+  async function salir() {
+    await fetch("/api/leave", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: joinCode, name }),
+    });
+
+    setRole(null);
+    setStatus(null);
   }
 
   return (
-    <main style={{ minHeight: "100vh", padding: 20 }}>
-      <h1>🎭 Juego de Impostores</h1>
+    <main style={{ padding: 20 }}>
+      
+      {/* --- PANTALLA INICIAL --- */}
+      {!mode && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "80vh",
+            gap: "20px",
+            textAlign: "center",
+          }}
+        >
+          <h1
+            style={{
+              fontSize: "40px",
+              fontWeight: "bold",
+              marginBottom: "30px",
+            }}
+          >
+            SOTEPOSTOR
+          </h1>
 
-      <hr />
+          <button
+            onClick={() => setMode("crear")}
+            className="boton"
+          >
+            CREAR PARTIDA
+          </button>
 
-      <h2>👑 Crear Partida</h2>
-      <div style={{ maxWidth: 300 }}>
-        <input
-          type="number"
-          placeholder="Jugadores"
-          value={players}
-          onChange={(e) => setPlayers(Number(e.target.value))}
-        />
+          <button
+            onClick={() => setMode("unirse")}
+            className="boton"
+          >
+            UNIRSE A PARTIDA
+          </button>
+        </div>
+      )}
 
-        <input
-          type="number"
-          placeholder="Impostores"
-          value={impostors}
-          onChange={(e) => setImpostors(Number(e.target.value))}
-        />
+      {/* --- MODO CREAR --- */}
+      {mode === "crear" && (
+        <>
+          <h2>CONFIGURAR PARTIDA</h2>
 
-        <input
-          type="text"
-          placeholder="Palabra (opcional)"
-          value={word}
-          onChange={(e) => setWord(e.target.value)}
-        />
+          <h1>Cantidad de Jugadores:</h1>
+          <input type="number" value={players} onChange={(e) => setPlayers(+e.target.value)} />
+          <h1>Cantidad de impostores:</h1>
+          <input type="number" min={1} value={impostors} onChange={(e) => setImpostors(+e.target.value)} />
+          <h1>Palabra para esta ronda (opcional):</h1>
+          <input type="text" value={word} placeholder="Palabra opcional" onChange={(e) => setWord(e.target.value)} />
+          <br/>
+          <button className="boton" onClick={crearPartida}>Crear</button>
 
-        <button onClick={crearPartida}>Crear Partida</button>
+          {gameCode && (
+            <>
+              <h3>CÓDIGO: {gameCode}</h3>
 
-        {gameCode && <h3>✅ Código: {gameCode}</h3>}
-      </div>
+              <button className="boton" onClick={iniciar}>INICIAR PARTIDA</button>
+              <button className="boton" onClick={siguienteRonda}>SIGUIENTE RONDA</button>
+              <button className="boton" onClick={finalizar}>FINALIZAR PARTIDA</button>
+            </>
+          )}
+        </>
+      )}
 
-      <hr />
+      {/* --- MODO UNIRSE --- */}
+      {mode === "unirse" && (
+        <>
+          <h2>UNIRSE A PARTIDA</h2>
 
-      <h2>👤 Entrar a Partida</h2>
-      <div style={{ maxWidth: 300 }}>
-        <input
-          type="text"
-          placeholder="Tu Nombre"
-          value={joinedName}
-          onChange={(e) => setJoinedName(e.target.value)}
-        />
+          <input placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
+          <input placeholder="Código" value={joinCode} onChange={(e) => setJoinCode(e.target.value)} />
 
-        <input
-          type="text"
-          placeholder="Código"
-          value={joinedCode}
-          onChange={(e) => setJoinedCode(e.target.value)}
-        />
+          <button className="boton" onClick={unirse}>Unirse</button>
 
-        <button onClick={unirse}>Ver Rol</button>
-
-        {role && (
-          <h3 style={{ marginTop: 20 }}>
-            🎯 Tu rol es: <strong>{role}</strong>
-          </h3>
-        )}
-      </div>
+          {role && (
+            <>
+              <h3>Estado: {status}</h3>
+              <h2>ROL: {role}</h2>
+              <button className="boton" onClick={salir}>Salir</button>
+            </>
+          )}
+        </>
+      )}
     </main>
   );
 }
