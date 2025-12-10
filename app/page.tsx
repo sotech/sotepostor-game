@@ -1,31 +1,38 @@
 "use client";
 
 import { useState } from "react";
+import "./page.css";
 
 type PlayerInfo = {
   name: string;
-  role: string;
+  role: string | null;
 };
 
+type Mode = "crear" | "unirse" | null;
+
 export default function Home() {
-  const [mode, setMode] = useState<null|string>(null);
+  const [mode, setMode] = useState<Mode>(null);
 
   // Crear partida
-  const [players, setPlayers] = useState(8);
-  const [impostors, setImpostors] = useState(1);
-  const [word, setWord] = useState("");
-  const [gameCode, setGameCode] = useState(null);
+  const [players, setPlayers] = useState<number>(8);
+  const [impostors, setImpostors] = useState<number>(1);
+  const [word, setWord] = useState<string>("");
+  const [gameCode, setGameCode] = useState<string | null>(null);
 
-  // Listado de jugadores
+  // Listado de jugadores (admin)
   const [gamePlayers, setGamePlayers] = useState<PlayerInfo[]>([]);
   const [shownRoles, setShownRoles] = useState<Record<string, boolean>>({});
 
+  // Unirse a partida (jugador)
+  const [name, setName] = useState<string>("");
+  const [joinCode, setJoinCode] = useState<string>("");
+  const [role, setRole] = useState<string | null | undefined>(undefined);
+  const [status, setStatus] = useState<string | null>(null);
+  const [round, setRound] = useState<number | null>(null);   // 👈 NUEVO
+  const [isJoined, setIsJoined] = useState<boolean>(false);
 
-  // Unirse a partida
-  const [name, setName] = useState("");
-  const [joinCode, setJoinCode] = useState("");
-  const [role, setRole] = useState(null);
-  const [status, setStatus] = useState(null);
+  // Animación de revelación
+  const [showReveal, setShowReveal] = useState<boolean>(false);
 
   // ---------------------------
   // CREAR PARTIDA
@@ -42,29 +49,63 @@ export default function Home() {
     actualizarInfo(data.code);
   }
 
-  // Iniciar partida
+  // Iniciar partida (asigna roles)
   async function iniciar() {
-    await fetch("/api/start-game", {
+    if (!gameCode) return;
+
+    const res = await fetch("/api/start-game", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code: gameCode }),
     });
+
+    const data = await res.json();
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    actualizarInfo(gameCode);
   }
 
   // Siguiente ronda
   async function siguienteRonda() {
-    await fetch("/api/next-round", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: gameCode }),
-    });
+    if (!gameCode) return;
 
-    alert("Nueva ronda iniciada");
-    actualizarInfo(gameCode);
+    try {
+      const res = await fetch("/api/next-round", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: gameCode }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Error next-round:", text);
+        alert("Error al iniciar la siguiente ronda");
+        return;
+      }
+
+      const data = await res.json();
+
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+
+      alert(`Nueva ronda iniciada (Ronda ${data.round})`);
+      actualizarInfo(gameCode);
+    } catch (e) {
+      console.error(e);
+      alert("Error inesperado al iniciar la siguiente ronda");
+    }
   }
+
 
   // Finalizar partida
   async function finalizar() {
+    if (!gameCode) return;
+
     await fetch("/api/end-game", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -78,7 +119,7 @@ export default function Home() {
   }
 
   // ---------------------------
-  // ACTUALIZAR INFO PARTIDA
+  // ACTUALIZAR INFO PARTIDA (admin)
   // ---------------------------
   async function actualizarInfo(codeOverride?: string | null) {
     const code = codeOverride || gameCode;
@@ -93,11 +134,11 @@ export default function Home() {
     const data = await res.json();
     if (!data.error) {
       setGamePlayers(data.assigned || []);
+      // Podríamos usar data.round para mostrar también en admin si quisieras
     }
   }
 
-
-  // Mostrar / Ocultar rol
+  // Mostrar / Ocultar rol (solo vista admin)
   function toggleVisibility(name: string) {
     setShownRoles((prev) => ({
       ...prev,
@@ -106,7 +147,7 @@ export default function Home() {
   }
 
   // ---------------------------
-  // UNIRSE A PARTIDA
+  // UNIRSE A PARTIDA (jugador)
   // ---------------------------
   async function unirse() {
     const res = await fetch("/api/join", {
@@ -117,13 +158,46 @@ export default function Home() {
 
     const data = await res.json();
 
-    if (data.error) return alert(data.error);
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
 
-    setRole(data.role);
-    setStatus(data.status || "ESPERA");
+    setIsJoined(true);
+    setRole(data.role);                 // null al principio
+    setStatus(data.status || null);
+    setRound(data.round ?? null);       // 👈 guardamos ronda actual
   }
 
-  // Salir
+  // Mostrar rol (consulta nuevamente al backend por si ya se asignó)
+  async function mostrarRol() {
+    if (!joinCode || !name) return;
+
+    const res = await fetch("/api/player-role", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: joinCode, name }),
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    setRole(data.role);
+    setStatus(data.status || null);
+    setRound(data.round ?? round);      // 👈 actualizamos ronda también
+
+    // Si ahora sí tiene rol, mostramos animación
+    if (typeof data.role === "string" && data.role.length > 0) {
+      setShowReveal(true);
+      setTimeout(() => setShowReveal(false), 4000);
+    }
+  }
+
+  // Salir de partida (jugador)
   async function salir() {
     await fetch("/api/leave", {
       method: "POST",
@@ -131,8 +205,11 @@ export default function Home() {
       body: JSON.stringify({ code: joinCode, name }),
     });
 
-    setRole(null);
+    setRole(undefined);
     setStatus(null);
+    setRound(null);               // 👈 limpiamos ronda
+    setIsJoined(false);
+    setShowReveal(false);
   }
 
   // --------------------------------------------------------
@@ -141,7 +218,6 @@ export default function Home() {
 
   return (
     <main style={{ padding: 20 }}>
-
       {/* ================================================
           PANTALLA INICIAL
       ================================================== */}
@@ -185,28 +261,52 @@ export default function Home() {
           <h2>CONFIGURAR PARTIDA</h2>
 
           <h3>Cantidad de jugadores:</h3>
-          <input type="number" value={players} onChange={(e) => setPlayers(+e.target.value)} />
+          <input
+            type="number"
+            value={players}
+            onChange={(e) => setPlayers(+e.target.value)}
+          />
 
           <h3>Cantidad de impostores:</h3>
-          <input type="number" min={1} value={impostors} onChange={(e) => setImpostors(+e.target.value)} />
+          <input
+            type="number"
+            min={1}
+            value={impostors}
+            onChange={(e) => setImpostors(+e.target.value)}
+          />
 
           <h3>Palabra para esta ronda (opcional):</h3>
-          <input type="text" value={word} placeholder="Palabra opcional" onChange={(e) => setWord(e.target.value)} />
+          <input
+            type="text"
+            value={word}
+            placeholder="Palabra opcional"
+            onChange={(e) => setWord(e.target.value)}
+          />
 
           <br />
-          <button className="boton" onClick={crearPartida}>Crear</button>
+          <button className="boton" onClick={crearPartida}>
+            Crear
+          </button>
 
           {gameCode && (
             <>
               <h2>CÓDIGO: {gameCode}</h2>
 
-              <button className="boton" onClick={iniciar}>INICIAR PARTIDA</button>
-              <button className="boton" onClick={siguienteRonda}>SIGUIENTE RONDA</button>
-              <button className="boton" onClick={finalizar}>FINALIZAR PARTIDA</button>
+              <button className="boton" onClick={iniciar}>
+                INICIAR PARTIDA
+              </button>
+              <button className="boton" onClick={siguienteRonda}>
+                SIGUIENTE RONDA
+              </button>
+              <button className="boton" onClick={finalizar}>
+                FINALIZAR PARTIDA
+              </button>
 
               {/* LISTA DE JUGADORES */}
               <h2 style={{ marginTop: "30px" }}>Jugadores Unidos:</h2>
-              <button className="boton" onClick={() => actualizarInfo()}>Actualizar</button>
+              <button className="boton" onClick={() => actualizarInfo()}>
+                Actualizar
+              </button>
 
               <ul style={{ listStyle: "none", padding: 0 }}>
                 {gamePlayers.map((p, i) => (
@@ -225,7 +325,9 @@ export default function Home() {
                     <span style={{ fontSize: "18px" }}>{p.name}</span>
 
                     <span style={{ marginRight: "15px", fontSize: "18px" }}>
-                      {shownRoles[p.name] ? p.role : "— — —"}
+                      {shownRoles[p.name]
+                        ? p.role ?? "SIN ROL"
+                        : "— — —"}
                     </span>
 
                     <button
@@ -250,22 +352,65 @@ export default function Home() {
         <>
           <h2>UNIRSE A PARTIDA</h2>
 
-          <input placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
-          <input placeholder="Código" value={joinCode} onChange={(e) => setJoinCode(e.target.value)} />
-
-          <button className="boton" onClick={unirse}>Unirse</button>
-
-          {role && (
+          {!isJoined ? (
             <>
-              <h3>Estado: {status}</h3>
-              <h2>ROL: {role}</h2>
+              <input
+                placeholder="Nombre"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <input
+                placeholder="Código"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value)}
+              />
 
-              <button className="boton" onClick={salir}>Salir</button>
+              <button className="boton" onClick={unirse}>
+                Unirse a la partida
+              </button>
+            </>
+          ) : (
+            <>
+              <p>
+                <strong>{name}</strong> unido a la partida{" "}
+                <strong>{joinCode}</strong>
+              </p>
+
+              <button className="boton" onClick={mostrarRol}>
+                Mostrar rol
+              </button>
+
+              <button className="boton" onClick={salir}>
+                Abandonar partida
+              </button>
+
+              <h3>Estado: {status ?? "DESCONOCIDO"}</h3>
+              <h3>Ronda: {round ?? "-"}</h3>   {/* 👈 ronda visible para el jugador */}
+              <h2>
+                {role === null
+                  ? "La partida no ha sido iniciada"
+                  : role
+                    ? `Tu rol es: ${role}`
+                    : "Pulsa 'Mostrar rol' para ver tu rol"}
+              </h2>
             </>
           )}
         </>
       )}
 
+      {/* ANIMACIÓN DE REVELACIÓN */}
+      {showReveal && role && (
+        <div className="reveal-overlay">
+          <div
+            className={
+              "reveal-card " +
+              (role === "IMPOSTOR" ? "reveal-impostor" : "reveal-crewmate")
+            }
+          >
+            {role === "IMPOSTOR" ? "IMPOSTOR" : `Palabra: ${role}`}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

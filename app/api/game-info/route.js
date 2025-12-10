@@ -2,8 +2,8 @@ import { games } from "../store";
 
 export async function POST(req) {
   const { code } = await req.json();
-
   const game = games[code];
+
   if (!game) {
     return Response.json({ error: "Partida no encontrada" }, { status: 404 });
   }
@@ -13,6 +13,7 @@ export async function POST(req) {
     impostors: game.impostors,
     word: game.word,
     status: game.status,
-    assigned: game.assigned, // contiene name + role
+    round: game.round,
+    assigned: game.assigned,
   });
 }

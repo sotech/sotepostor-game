@@ -5,9 +5,14 @@ function generarCodigo() {
 }
 
 async function obtenerPalabra() {
-  const res = await fetch("https://api.datamuse.com/words?sp=*&v=es&max=1");
+  const res = await fetch("https://api.datamuse.com/words?sp=*&v=es&md=p&max=2000");
   const data = await res.json();
-  return data[0]?.word || "PALABRA";
+
+  const nouns = data.filter((w) => w?.tags?.includes("n"));
+  if (!nouns.length) return "PALABRA";
+
+  const rnd = Math.floor(Math.random() * nouns.length);
+  return nouns[rnd].word;
 }
 
 export async function POST(req) {
@@ -24,8 +29,10 @@ export async function POST(req) {
     players,
     impostors,
     word: word.toUpperCase(),
+    status: "ESPERA",
+    round: 1,
     assigned: [],
   };
 
-  return Response.json({ code, word: games[code].word });
+  return Response.json({ code, word: games[code].word, round: games[code].round });
 }

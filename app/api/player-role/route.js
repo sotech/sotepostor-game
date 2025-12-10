@@ -10,18 +10,13 @@ export async function POST(req) {
     return Response.json({ error: "Partida no encontrada" }, { status: 404 });
   }
 
-  let player = game.assigned.find((p) => p.name === name);
+  const player = game.assigned.find((p) => p.name === name);
 
   if (!player) {
-    if (game.assigned.length >= game.players) {
-      return Response.json(
-        { error: "La partida ya está completa" },
-        { status: 400 }
-      );
-    }
-
-    player = { name, role: null };
-    game.assigned.push(player);
+    return Response.json(
+      { error: "Jugador no encontrado en esta partida" },
+      { status: 404 }
+    );
   }
 
   return Response.json({
