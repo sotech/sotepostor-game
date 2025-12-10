@@ -2,8 +2,13 @@
 
 import { useState } from "react";
 
+type PlayerInfo = {
+  name: string;
+  role: string;
+};
+
 export default function Home() {
-  const [mode, setMode] = useState(null);
+  const [mode, setMode] = useState<null|string>(null);
 
   // Crear partida
   const [players, setPlayers] = useState(8);
@@ -12,8 +17,9 @@ export default function Home() {
   const [gameCode, setGameCode] = useState(null);
 
   // Listado de jugadores
-  const [gamePlayers, setGamePlayers] = useState([]);
-  const [shownRoles, setShownRoles] = useState({});
+  const [gamePlayers, setGamePlayers] = useState<PlayerInfo[]>([]);
+  const [shownRoles, setShownRoles] = useState<Record<string, boolean>>({});
+
 
   // Unirse a partida
   const [name, setName] = useState("");
@@ -74,7 +80,7 @@ export default function Home() {
   // ---------------------------
   // ACTUALIZAR INFO PARTIDA
   // ---------------------------
-  async function actualizarInfo(codeOverride?:string) {
+  async function actualizarInfo(codeOverride?: string | null) {
     const code = codeOverride || gameCode;
     if (!code) return;
 
@@ -90,8 +96,9 @@ export default function Home() {
     }
   }
 
+
   // Mostrar / Ocultar rol
-  function toggleVisibility(name) {
+  function toggleVisibility(name: string) {
     setShownRoles((prev) => ({
       ...prev,
       [name]: !prev[name],
