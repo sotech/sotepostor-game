@@ -61,7 +61,7 @@ export default function Home() {
     const res = await fetch("/api/start-game", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: gameCode }),
+      body: JSON.stringify({ code: gameCode, word: word.trim() || null }),
     });
 
     const data = await res.json();
@@ -70,6 +70,7 @@ export default function Home() {
       return;
     }
 
+    setWord("");
     actualizarInfo(gameCode);
   }
 
@@ -77,11 +78,13 @@ export default function Home() {
   async function siguienteRonda() {
     if (!gameCode) return;
 
+    const chosenWord = word.trim();
+
     try {
       const res = await fetch("/api/next-round", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: gameCode }),
+        body: JSON.stringify({ code: gameCode, word: chosenWord || null }),
       });
 
       if (!res.ok) {
@@ -99,6 +102,7 @@ export default function Home() {
       }
 
       alert(`Nueva ronda iniciada (Ronda ${data.round})`);
+      setWord("");
       actualizarInfo(gameCode);
     } catch (e) {
       console.error(e);

@@ -1,11 +1,12 @@
 import { games } from "../store";
+import { randomNoun } from "../words";
 
 function mezclar(arr) {
   return arr.sort(() => Math.random() - 0.5);
 }
 
 export async function POST(req) {
-  const { code } = await req.json();
+  const { code, word } = await req.json();
   const game = games[code];
 
   if (!game) {
@@ -19,6 +20,10 @@ export async function POST(req) {
       { status: 400 }
     );
   }
+
+  const trimmed = word?.trim();
+  const chosenWord = (trimmed && trimmed.length > 0 ? trimmed : game.word) || randomNoun();
+  game.word = chosenWord.toUpperCase();
 
   const impostoresCount = Math.min(game.impostors, count);
   const roles = [
