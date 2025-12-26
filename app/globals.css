@@ -1,41 +1,53 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0d1117;
+  --foreground: #e5e7eb;
+  --surface: #111827;
+  --card: #161b22;
+  --muted: #9ca3af;
+  --border: #1f2937;
+  --accent: #38bdf8;
+  --accent-2: #f59e0b;
 }
 
 body {
-  background: var(--background);
+  background: radial-gradient(1200px circle at 15% 20%, rgba(56, 189, 248, 0.08), transparent 55%),
+    radial-gradient(1200px circle at 85% 10%, rgba(245, 158, 11, 0.06), transparent 50%),
+    var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
 }
 
 .boton {
-  background-color: white;
-  color: black;
-  border: none;
+  background: linear-gradient(120deg, var(--accent), #5eead4);
+  color: #0b1021;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 12px 24px;
-  font-size: 18px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.1s ease;
+  transition: opacity 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
+  box-shadow: 0 10px 30px rgba(56, 189, 248, 0.25);
 }
 
 .boton:hover {
-  opacity: 0.8;
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 40px rgba(56, 189, 248, 0.35);
 }
 
 .boton:active {
-  transform: scale(0.97);
+  transform: translateY(0);
+  opacity: 0.88;
+}
+
+.boton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Fondo semitransparente para revelar rol */
@@ -45,7 +57,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(4, 6, 13, 0.9);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -55,7 +67,8 @@ body {
 
 /* Tarjeta que se revela */
 .reveal-card {
-  background: white;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   padding: 40px 50px;
   text-align: center;
@@ -63,19 +76,20 @@ body {
   font-weight: bold;
   animation: zoomIn 0.4s ease forwards;
   opacity: 0;
+  color: #e2e8f0;
 }
 
-/* Colores según rol */
+/* Colores segun rol */
 .reveal-impostor {
-  background: #ff4b4b;
-  color: white;
-  box-shadow: 0 0 30px rgba(255, 0, 0, 0.8);
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  color: #fff;
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.9);
 }
 
 .reveal-crewmate {
-  background: #4bb8ff;
-  color: white;
-  box-shadow: 0 0 30px rgba(0, 140, 255, 0.8);
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  color: #0b1021;
+  box-shadow: 0 0 30px rgba(14, 165, 233, 0.9);
 }
 
 /* Animaciones */

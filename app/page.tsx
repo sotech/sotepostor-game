@@ -28,10 +28,10 @@ export default function Home() {
   const [joinCode, setJoinCode] = useState<string>("");
   const [role, setRole] = useState<string | null | undefined>(undefined);
   const [status, setStatus] = useState<string | null>(null);
-  const [round, setRound] = useState<number | null>(null);   // 👈 NUEVO
+  const [round, setRound] = useState<number | null>(null); // ronda actual
   const [isJoined, setIsJoined] = useState<boolean>(false);
 
-  // Animación de revelación
+  // Animacion de revelacion
   const [showReveal, setShowReveal] = useState<boolean>(false);
 
   // ---------------------------
@@ -101,7 +101,6 @@ export default function Home() {
     }
   }
 
-
   // Finalizar partida
   async function finalizar() {
     if (!gameCode) return;
@@ -134,7 +133,7 @@ export default function Home() {
     const data = await res.json();
     if (!data.error) {
       setGamePlayers(data.assigned || []);
-      // Podríamos usar data.round para mostrar también en admin si quisieras
+      // Podriamos usar data.round para mostrar tambien en admin si quisieras
     }
   }
 
@@ -164,12 +163,12 @@ export default function Home() {
     }
 
     setIsJoined(true);
-    setRole(data.role);                 // null al principio
+    setRole(data.role); // null al principio
     setStatus(data.status || null);
-    setRound(data.round ?? null);       // 👈 guardamos ronda actual
+    setRound(data.round ?? null); // guardamos ronda actual
   }
 
-  // Mostrar rol (consulta nuevamente al backend por si ya se asignó)
+  // Mostrar rol (consulta nuevamente al backend por si ya se asigno)
   async function mostrarRol() {
     if (!joinCode || !name) return;
 
@@ -188,9 +187,9 @@ export default function Home() {
 
     setRole(data.role);
     setStatus(data.status || null);
-    setRound(data.round ?? round);      // 👈 actualizamos ronda también
+    setRound(data.round ?? round); // actualizamos ronda tambien
 
-    // Si ahora sí tiene rol, mostramos animación
+    // Si ahora se asigno rol, mostramos animacion
     if (typeof data.role === "string" && data.role.length > 0) {
       setShowReveal(true);
       setTimeout(() => setShowReveal(false), 4000);
@@ -207,7 +206,7 @@ export default function Home() {
 
     setRole(undefined);
     setStatus(null);
-    setRound(null);               // 👈 limpiamos ronda
+    setRound(null);
     setIsJoined(false);
     setShowReveal(false);
   }
@@ -217,200 +216,207 @@ export default function Home() {
   // --------------------------------------------------------
 
   return (
-    <main style={{ padding: 20 }}>
-      {/* ================================================
-          PANTALLA INICIAL
-      ================================================== */}
-      {!mode && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "80vh",
-            gap: "20px",
-            textAlign: "center",
-          }}
-        >
-          <h1
-            style={{
-              fontSize: "40px",
-              fontWeight: "bold",
-              marginBottom: "30px",
-            }}
-          >
-            SOTEPOSTOR
-          </h1>
+    <main className="page-shell">
+      <div className="page-content">
+        {/* ================================================
+            PANTALLA INICIAL
+        ================================================== */}
+        {!mode && (
+          <div className="landing">
+            <h1>SOTEPOSTOR</h1>
 
-          <button className="boton" onClick={() => setMode("crear")}>
-            CREAR PARTIDA
-          </button>
+            <button className="boton" onClick={() => setMode("crear")}>
+              CREAR PARTIDA
+            </button>
 
-          <button className="boton" onClick={() => setMode("unirse")}>
-            UNIRSE A PARTIDA
-          </button>
-        </div>
-      )}
-
-      {/* ================================================
-          CREAR PARTIDA
-      ================================================== */}
-      {mode === "crear" && (
-        <>
-          <h2>CONFIGURAR PARTIDA</h2>
-
-          <h3>Cantidad de jugadores:</h3>
-          <input
-            type="number"
-            value={players}
-            onChange={(e) => setPlayers(+e.target.value)}
-          />
-
-          <h3>Cantidad de impostores:</h3>
-          <input
-            type="number"
-            min={1}
-            value={impostors}
-            onChange={(e) => setImpostors(+e.target.value)}
-          />
-
-          <h3>Palabra para esta ronda (opcional):</h3>
-          <input
-            type="text"
-            value={word}
-            placeholder="Palabra opcional"
-            onChange={(e) => setWord(e.target.value)}
-          />
-
-          <br />
-          <button className="boton" onClick={crearPartida}>
-            Crear
-          </button>
-
-          {gameCode && (
-            <>
-              <h2>CÓDIGO: {gameCode}</h2>
-
-              <button className="boton" onClick={iniciar}>
-                INICIAR PARTIDA
-              </button>
-              <button className="boton" onClick={siguienteRonda}>
-                SIGUIENTE RONDA
-              </button>
-              <button className="boton" onClick={finalizar}>
-                FINALIZAR PARTIDA
-              </button>
-
-              {/* LISTA DE JUGADORES */}
-              <h2 style={{ marginTop: "30px" }}>Jugadores Unidos:</h2>
-              <button className="boton" onClick={() => actualizarInfo()}>
-                Actualizar
-              </button>
-
-              <ul style={{ listStyle: "none", padding: 0 }}>
-                {gamePlayers.map((p, i) => (
-                  <li
-                    key={i}
-                    style={{
-                      marginTop: "10px",
-                      padding: "10px",
-                      border: "1px solid black",
-                      borderRadius: "8px",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span style={{ fontSize: "18px" }}>{p.name}</span>
-
-                    <span style={{ marginRight: "15px", fontSize: "18px" }}>
-                      {shownRoles[p.name]
-                        ? p.role ?? "SIN ROL"
-                        : "— — —"}
-                    </span>
-
-                    <button
-                      className="boton"
-                      style={{ width: "110px" }}
-                      onClick={() => toggleVisibility(p.name)}
-                    >
-                      {shownRoles[p.name] ? "OCULTAR" : "MOSTRAR"}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </>
-      )}
-
-      {/* ================================================
-          UNIRSE A PARTIDA
-      ================================================== */}
-      {mode === "unirse" && (
-        <>
-          <h2>UNIRSE A PARTIDA</h2>
-
-          {!isJoined ? (
-            <>
-              <input
-                placeholder="Nombre"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-              <input
-                placeholder="Código"
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value)}
-              />
-
-              <button className="boton" onClick={unirse}>
-                Unirse a la partida
-              </button>
-            </>
-          ) : (
-            <>
-              <p>
-                <strong>{name}</strong> unido a la partida{" "}
-                <strong>{joinCode}</strong>
-              </p>
-
-              <button className="boton" onClick={mostrarRol}>
-                Mostrar rol
-              </button>
-
-              <button className="boton" onClick={salir}>
-                Abandonar partida
-              </button>
-
-              <h3>Estado: {status ?? "DESCONOCIDO"}</h3>
-              <h3>Ronda: {round ?? "-"}</h3>   {/* 👈 ronda visible para el jugador */}
-              <h2>
-                {role === null
-                  ? "La partida no ha sido iniciada"
-                  : role
-                    ? `Tu rol es: ${role}`
-                    : "Pulsa 'Mostrar rol' para ver tu rol"}
-              </h2>
-            </>
-          )}
-        </>
-      )}
-
-      {/* ANIMACIÓN DE REVELACIÓN */}
-      {showReveal && role && (
-        <div className="reveal-overlay">
-          <div
-            className={
-              "reveal-card " +
-              (role === "IMPOSTOR" ? "reveal-impostor" : "reveal-crewmate")
-            }
-          >
-            {role === "IMPOSTOR" ? "IMPOSTOR" : `Palabra: ${role}`}
+            <button className="boton" onClick={() => setMode("unirse")}>
+              UNIRSE A PARTIDA
+            </button>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* ================================================
+            CREAR PARTIDA (ADMIN)
+        ================================================== */}
+        {mode === "crear" && (
+          <div className="admin-section">
+            <h1 className="page-title">Panel de administrador</h1>
+
+            <div className="admin-grid">
+              <div className="card">
+                <h2>Configurar partida</h2>
+
+                <div className="field-group">
+                  <label className="field-label">Cantidad de jugadores</label>
+                  <input
+                    type="number"
+                    value={players}
+                    onChange={(e) => setPlayers(+e.target.value)}
+                  />
+                </div>
+
+                <div className="field-group">
+                  <label className="field-label">Cantidad de impostores</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={impostors}
+                    onChange={(e) => setImpostors(+e.target.value)}
+                  />
+                </div>
+
+                <div className="field-group">
+                  <label className="field-label">Palabra (opcional)</label>
+                  <input
+                    type="text"
+                    value={word}
+                    placeholder="Palabra opcional"
+                    onChange={(e) => setWord(e.target.value)}
+                  />
+                </div>
+
+                <button className="boton full-width" onClick={crearPartida}>
+                  Crear
+                </button>
+              </div>
+
+              <div className="card code-card">
+                <h2>Codigo</h2>
+
+                {gameCode ? (
+                  <>
+                    <p className="game-code">{gameCode}</p>
+
+                    <div className="button-row">
+                      <button className="boton" onClick={iniciar}>
+                        INICIAR PARTIDA
+                      </button>
+                      <button className="boton" onClick={siguienteRonda}>
+                        SIGUIENTE RONDA
+                      </button>
+                      <button className="boton" onClick={finalizar}>
+                        FINALIZAR PARTIDA
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="muted">
+                    Genera el codigo creando la partida.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {gameCode && (
+              <div className="card players-card">
+                <div className="players-header">
+                  <div>
+                    <h2>Jugadores unidos</h2>
+                    <p className="muted">
+                      Actualiza para sincronizar los roles asignados.
+                    </p>
+                  </div>
+                  <button className="boton" onClick={() => actualizarInfo()}>
+                    Actualizar
+                  </button>
+                </div>
+
+                {gamePlayers.length === 0 ? (
+                  <p className="muted">Todavia no hay jugadores unidos.</p>
+                ) : (
+                  <div className="players-list">
+                    {gamePlayers.map((p, i) => (
+                      <div className="player-row" key={i}>
+                        <span className="player-name">{p.name}</span>
+
+                        <span className="player-role">
+                          {shownRoles[p.name] ? p.role ?? "SIN ROL" : "???"}
+                        </span>
+
+                        <div className="player-actions">
+                          <button
+                            className="boton"
+                            onClick={() => toggleVisibility(p.name)}
+                          >
+                            {shownRoles[p.name] ? "OCULTAR" : "MOSTRAR"}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================================================
+            UNIRSE A PARTIDA
+        ================================================== */}
+        {mode === "unirse" && (
+          <div className="card join-card">
+            <h2>UNIRSE A PARTIDA</h2>
+
+            {!isJoined ? (
+              <>
+                <input
+                  placeholder="Nombre"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+                <input
+                  placeholder="Codigo"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value)}
+                />
+
+                <button className="boton" onClick={unirse}>
+                  Unirse a la partida
+                </button>
+              </>
+            ) : (
+              <>
+                <p>
+                  <strong>{name}</strong> unido a la partida{" "}
+                  <strong>{joinCode}</strong>
+                </p>
+
+                <button className="boton" onClick={mostrarRol}>
+                  Mostrar rol
+                </button>
+
+                <button className="boton" onClick={salir}>
+                  Abandonar partida
+                </button>
+
+                <h3>Estado: {status ?? "DESCONOCIDO"}</h3>
+                <h3>Ronda: {round ?? "-"}</h3>
+                <h2>
+                  {role === null
+                    ? "La partida no ha sido iniciada"
+                    : role
+                      ? `Tu rol es: ${role}`
+                      : "Pulsa 'Mostrar rol' para ver tu rol"}
+                </h2>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ANIMACION DE REVELACION */}
+        {showReveal && role && (
+          <div className="reveal-overlay">
+            <div
+              className={
+                "reveal-card " +
+                (role === "IMPOSTOR" ? "reveal-impostor" : "reveal-crewmate")
+              }
+            >
+              {role === "IMPOSTOR" ? "IMPOSTOR" : `Palabra: ${role}`}
+            </div>
+          </div>
+        )}
+      </div>
     </main>
   );
 }
