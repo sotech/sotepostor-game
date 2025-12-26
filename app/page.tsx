@@ -14,7 +14,7 @@ export default function Home() {
   const [mode, setMode] = useState<Mode>(null);
 
   // Crear partida
-  const [players, setPlayers] = useState<number>(8);
+  const [players, setPlayers] = useState<number>(3);
   const [impostors, setImpostors] = useState<number>(1);
   const [word, setWord] = useState<string>("");
   const [gameCode, setGameCode] = useState<string | null>(null);
@@ -38,6 +38,11 @@ export default function Home() {
   // CREAR PARTIDA
   // ---------------------------
   async function crearPartida() {
+    if (players < 3) {
+      alert("La partida requiere al menos 3 jugadores.");
+      return;
+    }
+
     const res = await fetch("/api/create-game", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -149,10 +154,16 @@ export default function Home() {
   // UNIRSE A PARTIDA (jugador)
   // ---------------------------
   async function unirse() {
+    const trimmedName = name.trim();
+    if (!trimmedName || trimmedName.length < 3) {
+      alert("El nombre es obligatorio y debe tener al menos 3 caracteres.");
+      return;
+    }
+
     const res = await fetch("/api/join", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: joinCode, name }),
+      body: JSON.stringify({ code: joinCode, name: trimmedName }),
     });
 
     const data = await res.json();
@@ -250,8 +261,9 @@ export default function Home() {
                   <label className="field-label">Cantidad de jugadores</label>
                   <input
                     type="number"
+                    min={3}
                     value={players}
-                    onChange={(e) => setPlayers(+e.target.value)}
+                    onChange={(e) => setPlayers(Math.max(3, +e.target.value))}
                   />
                 </div>
 
@@ -363,6 +375,7 @@ export default function Home() {
                   placeholder="Nombre"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  minLength={3}
                 />
                 <input
                   placeholder="Codigo"
